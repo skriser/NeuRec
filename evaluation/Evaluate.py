@@ -12,26 +12,31 @@ import logging
 from evaluation.leaveoneout.LeaveOneOutEvaluate import evaluate_by_loo
 from evaluation.foldout.FoldOutEvaluate import evaluate_by_foldout
 
-def test_model(model,dataset,num_thread=10):
+
+def test_model(model, dataset, num_thread=10):
     eval_begin = time()
-    model_name=str(model.__class__).split(sep=".")[-1].replace("\'>","")
+    model_name = str(model.__class__).split(sep=".")[-1].replace("\'>", "")
     if dataset.splitter == "loo":
-        (hits, ndcgs,aucs) = evaluate_by_loo(model,dataset.testMatrix,dataset.testNegatives,num_thread)
+        (hits, ndcgs, aucs) = evaluate_by_loo(model, dataset.testMatrix, dataset.testNegatives, num_thread)
         hr = np.array(hits).mean()
         ndcg = np.array(ndcgs).mean()
         auc = np.array(aucs).mean()
         logging.info(
-            "[model=%s][loss_function=%s]: [Test HR = %.4f, NDCG = %.4f,AUC = %.4f] [Time=%.1fs]" % (model_name,model.loss_function,
-            hr, ndcg,auc, time() - eval_begin))
-        print ("[model=%s][loss_function=%s]: [Test HR = %.4f, NDCG = %.4f,AUC = %.4f] [Time=%.1fs]" % (model_name,model.loss_function,
-            hr, ndcg,auc, time() - eval_begin))
-        
+            "[model=%s][loss_function=%s]: [Test HR = %.4f, NDCG = %.4f,AUC = %.4f] [Time=%.1fs]" % (
+            model_name, model.loss_function,
+            hr, ndcg, auc, time() - eval_begin))
+        print("[model=%s][loss_function=%s]: [Test HR = %.4f, NDCG = %.4f,AUC = %.4f] [Time=%.1fs]" % (
+        model_name, model.loss_function,
+        hr, ndcg, auc, time() - eval_begin))
+
     else:
-        (pres,recs,maps,ndcgs,mrrs) = evaluate_by_foldout(model,dataset.testMatrix,dataset.testNegatives,num_thread)
+        (pres, recs, maps, ndcgs, mrrs) = evaluate_by_foldout(model, dataset.testMatrix, dataset.testNegatives,
+                                                              num_thread)
         Precision = np.array(pres).mean()
         Recall = np.array(recs).mean()
         MAP = np.array(maps).mean()
         NDCG = np.array(ndcgs).mean()
-        MRR = np.array(mrrs).mean()    
-        print ("[model=%s][loss_function=%s][%.1fs]: [Test Precision = %.4f, Recall= %.4f, MAP= %.4f, NDCG= %.4f, MRR= %.4f][topk=%.4s]"
-               %(model_name,model.loss_function,time() - eval_begin, Precision, Recall,MAP,NDCG,MRR,model.topK))     
+        MRR = np.array(mrrs).mean()
+        print(
+            "[model=%s][loss_function=%s][%.1fs]: [Test Precision = %.4f, Recall= %.4f, MAP= %.4f, NDCG= %.4f, MRR= %.4f][topk=%.4s]"
+            % (model_name, model.loss_function, time() - eval_begin, Precision, Recall, MAP, NDCG, MRR, model.topK))

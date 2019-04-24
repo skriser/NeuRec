@@ -14,7 +14,7 @@ from model.item_ranking.NeuMF import NeuMF
 from model.item_ranking.APR import APR
 from model.seq_ranking.HRM import HRM
 
-from model.item_ranking.DMF import DMF 
+from model.item_ranking.DMF import DMF
 from model.item_ranking.ConvNCF import ConvNCF
 from model.item_ranking.CDAE import CDAE
 from model.item_ranking.DAE import DAE
@@ -24,13 +24,14 @@ from model.item_ranking.MultiDAE import MultiDAE
 from model.item_ranking.MultiVAE import MultiVAE
 from model.item_ranking.JCA import JCA
 from model.item_ranking.CFGAN import CFGAN
+
 np.random.seed(2018)
 tf.random.set_random_seed(2017)
 
 if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read("neurec.properties")
-    conf=dict(config.items("default")) 
+    conf = dict(config.items("default"))
     data_input_path = conf["data.input.path"]
     dataset_name = conf["data.input.dataset"]
     splitter = conf["data.splitter"]
@@ -39,73 +40,73 @@ if __name__ == "__main__":
     recommender = str(conf["recommender"])
     evaluate_neg = int(conf["rec.evaluate.neg"])
     num_thread = int(conf["rec.number.thread"])
-    splitterRatio=list(eval(conf["data.splitterratio"]))
-    dataset = Dataset(data_input_path,splitter,separator,threshold,evaluate_neg,dataset_name,splitterRatio) 
+    splitterRatio = list(eval(conf["data.splitterratio"]))
+    dataset = Dataset(data_input_path, splitter, separator, threshold, evaluate_neg, dataset_name, splitterRatio)
 
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
-        if recommender.lower() == "mf" : 
-            model = MF(sess,dataset)    
-                       
+        if recommender.lower() == "mf":
+            model = MF(sess, dataset)
+
         elif recommender.lower() == "fpmc":
-            model = FPMC(sess,dataset) 
-            
+            model = FPMC(sess, dataset)
+
         elif recommender.lower() == "fpmcplus":
-            model = FPMCplus(sess,dataset) 
-            
+            model = FPMCplus(sess, dataset)
+
         elif recommender.lower() == "fism":
-            model = FISM(sess,dataset) 
-            
+            model = FISM(sess, dataset)
+
         elif recommender.lower() == "apr":
-            model = APR(sess,dataset) 
-            
+            model = APR(sess, dataset)
+
         elif recommender.lower() == "nais":
-            model = NAIS(sess,dataset) 
-            
+            model = NAIS(sess, dataset)
+
         elif recommender.lower() == "mlp":
-            model = MLP(sess,dataset) 
-        
+            model = MLP(sess, dataset)
+
         elif recommender.lower() == "hrm":
-            model = HRM(sess,dataset) 
-        
+            model = HRM(sess, dataset)
+
         elif recommender.lower() == "dmf":
-            model = DMF(sess,dataset) 
-            
+            model = DMF(sess, dataset)
+
         elif recommender.lower() == "neumf":
-            model = NeuMF(sess,dataset) 
-               
+            model = NeuMF(sess, dataset)
+
         elif recommender.lower() == "convncf":
-            model = ConvNCF(sess,dataset) 
-            
+            model = ConvNCF(sess, dataset)
+
         elif recommender.lower() == "transrec":
-            model = TransRec(sess,dataset)  
-            
+            model = TransRec(sess, dataset)
+
         elif recommender.lower() == "cdae":
-            model = CDAE(sess,dataset)  
-        
+            model = CDAE(sess, dataset)
+
         elif recommender.lower() == "dae":
-            model = DAE(sess,dataset)  
-            
+            model = DAE(sess, dataset)
+
         elif recommender.lower() == "npe":
-            model = NPE(sess,dataset)  
-            
+            model = NPE(sess, dataset)
+
         elif recommender.lower() == "multidae":
-            model = MultiDAE(sess,dataset)  
-            
+            model = MultiDAE(sess, dataset)
+
         elif recommender.lower() == "multivae":
-            model = MultiVAE(sess,dataset)  
-            
+            model = MultiVAE(sess, dataset)
+
         elif recommender.lower() == "irgan":
-            model = IRGAN(sess,dataset)  
-            
+            model = IRGAN(sess, dataset)
+
         elif recommender.lower() == "cfgan":
-            model = CFGAN(sess,dataset)  
-            
+            model = CFGAN(sess, dataset)
+
         elif recommender.lower() == "jca":
-            model = JCA(sess,dataset)  
+            model = JCA(sess, dataset)
 
         model.build_graph()
         sess.run(tf.global_variables_initializer())
         model.train_model()
-        Evaluate.test_model(model,dataset,num_thread)
+        Evaluate.test_model(model, dataset, num_thread)

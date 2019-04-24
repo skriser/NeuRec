@@ -1,50 +1,52 @@
-'''
-Reference: Xiangnan He, et al., ¡°Adversarial Personalized Ranking for Recommendation" in SIGIR2018
+"""
+Reference: Xiangnan He, et al., â€œAdversarial Personalized Ranking for Recommendation" in SIGIR2018
 @author: wubin
-'''
+"""
 from __future__ import absolute_import
 from __future__ import division
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 import numpy as np
 from time import time
 import configparser
-from util import learner,data_gen
+from util import learner, data_gen
 from evaluation import Evaluate
 from model.AbstractRecommender import AbstractRecommender
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+
 class APR(AbstractRecommender):
-    def __init__(self,sess,dataset):  
+    def __init__(self, sess, dataset):
         config = configparser.ConfigParser()
         config.read("conf/APR.properties")
-        self.conf=dict(config.items("hyperparameters"))
-        print("APR arguments: %s " %(self.conf))
+        self.conf = dict(config.items("hyperparameters"))
+        print("APR arguments: %s " % (self.conf))
         self.learning_rate = float(self.conf["learning_rate"])
         self.embedding_size = int(self.conf["embedding_size"])
         self.learner = self.conf["learner"]
         self.topK = int(self.conf["topk"])
-        self.num_epochs= int(self.conf["epochs"])
-        self.eps= float(self.conf["eps"])
+        self.num_epochs = int(self.conf["epochs"])
+        self.eps = float(self.conf["eps"])
         self.adv = str(self.conf["adv"])
         self.adver = int(self.conf["adver"])
         self.adv_epoch = int(self.conf["adv_epoch"])
         self.reg = float(self.conf["reg"])
         self.reg_adv = float(self.conf["reg_adv"])
-        self.batch_size= int(self.conf["batch_size"])
-        self.verbose= int(self.conf["verbose"])
+        self.batch_size = int(self.conf["batch_size"])
+        self.verbose = int(self.conf["verbose"])
         self.loss_function = self.conf["loss_function"]
         self.dataset = dataset
         self.num_users = dataset.num_users
         self.num_items = dataset.num_items
-        self.sess=sess  
-    
+        self.sess = sess
+
     def _create_placeholders(self):
         with tf.name_scope("input_data"):
-            self.user_input = tf.placeholder(tf.int32, shape=[None,], name="user_input")
-            self.item_input_pos = tf.placeholder(tf.int32, shape=[None,], name="item_input_pos")
-            self.item_input_neg = tf.placeholder(tf.int32, shape=[None,], name="item_input_neg")
-            
+            self.user_input = tf.placeholder(tf.int32, shape=[None, ], name="user_input")
+            self.item_input_pos = tf.placeholder(tf.int32, shape=[None, ], name="item_input_pos")
+            self.item_input_neg = tf.placeholder(tf.int32, shape=[None, ], name="item_input_neg")
+
     def _create_variables(self):
         with tf.name_scope("embedding"):
             self.embedding_P = tf.Variable(
@@ -64,8 +66,8 @@ class APR(AbstractRecommender):
             # embedding look up
             self.embedding_p = tf.nn.embedding_lookup(self.embedding_P, self.user_input)
             self.embedding_q = tf.nn.embedding_lookup(self.embedding_Q, item_input)  # (b, embedding_size)
-            return tf.reduce_sum(self.embedding_p * self.embedding_q,1) # (b, embedding_size) * (embedding_size, 1)
-    
+            return tf.reduce_sum(self.embedding_p * self.embedding_q, 1)  # (b, embedding_size) * (embedding_size, 1)
+
     def _create_inference_adv(self, item_input):
         with tf.name_scope("inference_adv"):
             # embedding look up
@@ -74,8 +76,8 @@ class APR(AbstractRecommender):
             # add adversarial noise
             self.P_plus_delta = self.embedding_p + tf.nn.embedding_lookup(self.delta_P, self.user_input)
             self.Q_plus_delta = self.embedding_q + tf.nn.embedding_lookup(self.delta_Q, item_input)
-            return tf.reduce_sum(self.P_plus_delta * self.Q_plus_delta,1) # (b, embedding_size) * (embedding_size, 1)
-    
+            return tf.reduce_sum(self.P_plus_delta * self.Q_plus_delta, 1)  # (b, embedding_size) * (embedding_size, 1)
+
     def _create_loss(self):
         with tf.name_scope("loss"):
             # loss for L(Theta)
@@ -87,7 +89,7 @@ class APR(AbstractRecommender):
 
             # loss to be omptimized
             self.opt_loss = self.loss + self.reg * (
-                        tf.reduce_sum(tf.square(self.embedding_P)) + tf.reduce_sum(tf.square(self.embedding_Q)))
+                    tf.reduce_sum(tf.square(self.embedding_P)) + tf.reduce_sum(tf.square(self.embedding_Q)))
 
             if self.adver:
                 # loss for L(Theta + adv_Delta)
@@ -97,8 +99,7 @@ class APR(AbstractRecommender):
                 # self.loss_adv = tf.reduce_sum(tf.log(1 + tf.exp(-self.result_adv)))
                 self.loss_adv = tf.reduce_sum(tf.nn.softplus(-self.result_adv))
                 self.opt_loss += self.reg_adv * self.loss_adv
-    
-    
+
     def _create_adversarial(self):
         with tf.name_scope("adversarial"):
             # generate the adversarial weights by random method
@@ -128,34 +129,36 @@ class APR(AbstractRecommender):
     def _create_optimizer(self):
         with tf.name_scope("learner"):
             self.optimizer = learner.optimizer(self.learner, self.loss, self.learning_rate)
-    
+
     def build_graph(self):
         self._create_placeholders()
         self._create_variables()
         self._create_loss()
         self._create_optimizer()
         self._create_adversarial()
-#---------- training process -------
+
+    # ---------- training process -------
     def train_model(self):
-        for epoch in  range(self.num_epochs):
+        for epoch in range(self.num_epochs):
             # Generate training instances
             user_input, item_input_pos, item_input_neg = data_gen._get_pairwise_all_data(self.dataset)
             total_loss = 0.0
             training_start_time = time()
             num_training_instances = len(user_input)
-            for num_batch in np.arange(int(num_training_instances/self.batch_size)):
-                bat_users,bat_items_pos,bat_items_neg =\
-                 data_gen._get_pairwise_batch_data(user_input,\
-                 item_input_pos, item_input_neg, num_batch, self.batch_size)
-                feed_dict = {self.user_input:bat_users,self.item_input_pos:bat_items_pos,\
-                            self.item_input_neg:bat_items_neg}
-                
-                loss,_ = self.sess.run((self.loss,self.optimizer),feed_dict=feed_dict)
-                total_loss+=loss
-            print("[iter %d : loss : %f, time: %f]" %(epoch+1,total_loss/num_training_instances,time()-training_start_time))
-            if epoch %self.verbose == 0:
-                Evaluate.test_model(self,self.dataset)
-                
+            for num_batch in np.arange(int(num_training_instances / self.batch_size)):
+                bat_users, bat_items_pos, bat_items_neg = \
+                    data_gen._get_pairwise_batch_data(user_input, \
+                                                      item_input_pos, item_input_neg, num_batch, self.batch_size)
+                feed_dict = {self.user_input: bat_users, self.item_input_pos: bat_items_pos, \
+                             self.item_input_neg: bat_items_neg}
+
+                loss, _ = self.sess.run((self.loss, self.optimizer), feed_dict=feed_dict)
+                total_loss += loss
+            print("[iter %d : loss : %f, time: %f]" % (
+            epoch + 1, total_loss / num_training_instances, time() - training_start_time))
+            if epoch % self.verbose == 0:
+                Evaluate.test_model(self, self.dataset)
+
     def predict(self, user_id, items):
         users = np.full(len(items), user_id, dtype=np.int32)
-        return self.sess.run(self.output, feed_dict={self.user_input: users, self.item_input_pos: items})  
+        return self.sess.run(self.output, feed_dict={self.user_input: users, self.item_input_pos: items})

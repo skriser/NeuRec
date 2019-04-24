@@ -5,6 +5,7 @@
 #             count += 1
 #     return count
 
+
 def getHitRatio(ranklist, gtItem):
     for item in ranklist:
         if item == gtItem:

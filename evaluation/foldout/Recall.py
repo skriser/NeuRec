@@ -1,10 +1,10 @@
-def hit(ranklist,taget_items):
+def hit(rank_list, target_items):
     count = 0
-    for item in ranklist:
-        if item in taget_items:
+    for item in rank_list:
+        if item in target_items:
             count += 1
     return count
 
-def getRec(ranklist,taget_items):
-    
-    return hit(ranklist, taget_items)/len(taget_items)
+
+def getRec(rank_list, target_items):
+    return hit(rank_list, target_items) / len(target_items)

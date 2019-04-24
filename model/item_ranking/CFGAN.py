@@ -1,8 +1,8 @@
-'''
-Reference: Dong-Kyu Chae, et al., "CFGAN: A Generic Collaborative Filtering Framework 
+"""
+Reference: Dong-Kyu Chae, et al., "CFGAN: A Generic Collaborative Filtering Framework
 based on Generative Adversarial Networks." in CIKM2018
 @author: Zhongchuan Sun
-'''
+"""
 # ZP: Hybrid of zero-reconstruction regularization and partial-masking
 
 from model.AbstractRecommender import AbstractRecommender
@@ -44,7 +44,6 @@ class CFGAN(AbstractRecommender):
         model_config.read("conf/CFGAN.properties")
         config = dict(model_config.items("hyperparameters"))
         self.dataset = dataset
-
 
         self.epochs = eval(config["epochs"])
         self.topK = eval(config["topk"])
